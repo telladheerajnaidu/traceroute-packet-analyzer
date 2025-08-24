@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Traceroute Packet Analysis</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Advanced Traceroute Packet Analysis</h1>
+            <p class="header__subtitle">Deep dive into packet-level traceroute operations with real-time protocol analysis</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Left Panel: Network Topology & Controls -->
+            <div class="left-panel">
+                <!-- Simulation Controls -->
+                <div class="card control-panel">
+                    <div class="card__header">
+                        <h3>Simulation Controls</h3>
+                    </div>
+                    <div class="card__body">
+                        <div class="form-group">
+                            <label class="form-label" for="traceroute-mode">Traceroute Mode:</label>
+                            <select id="traceroute-mode" class="form-control">
+                                <option value="udp">UDP Traceroute (Default)</option>
+                                <option value="icmp">ICMP Traceroute</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="destination">Destination:</label>
+                            <input type="text" id="destination" class="form-control" value="google.com (8.8.8.8)">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="max-hops">Max Hops: <span id="max-hops-value">8</span></label>
+                            <input type="range" id="max-hops" class="range-slider" min="1" max="15" value="8">
+                        </div>
+                        
+                        <div class="control-buttons">
+                            <button id="start-btn" class="btn btn--primary">Start Traceroute</button>
+                            <button id="pause-btn" class="btn btn--secondary" disabled>Pause</button>
+                            <button id="reset-btn" class="btn btn--outline">Reset</button>
+                        </div>
+                        
+                        <div class="simulation-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="step-mode"> Step-by-step mode
+                            </label>
+                            <button id="next-step-btn" class="btn btn--sm btn--outline" disabled>Next Step</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Topology -->
+                <div class="card network-diagram">
+                    <div class="card__header">
+                        <h3>Network Topology</h3>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="packet probe-packet"></div>
+                                <span>UDP/ICMP Probe</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="packet icmp-packet"></div>
+                                <span>ICMP Response</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="network-container">
+                            <div class="network-path">
+                                <!-- Source Computer -->
+                                <div class="network-node source-node" id="source">
+                                    <div class="node-icon">💻</div>
+                                    <div class="node-label">
+                                        <div class="node-name">Your Computer</div>
+                                        <div class="node-ip">192.168.1.100</div>
+                                    </div>
+                                </div>
+
+                                <!-- Router Hops -->
+                                <div class="hop-node" id="hop-1">
+                                    <div class="node-icon">🔗</div>
+                                    <div class="node-label">
+                                        <div class="node-name">Gateway Router</div>
+                                        <div class="node-ip">192.168.1.1</div>
+                                    </div>
+                                </div>
+
+                                <div class="hop-node" id="hop-2">
+                                    <div class="node-icon">🔗</div>
+                                    <div class="node-label">
+                                        <div class="node-name">ISP Router 1</div>
+                                        <div class="node-ip">10.0.1.1</div>
+                                    </div>
+                                </div>
+
+                                <div class="hop-node" id="hop-3">
+                                    <div class="node-icon">🔗</div>
+                                    <div class="node-label">
+                                        <div class="node-name">ISP Router 2</div>
+                                        <div class="node-ip">10.0.2.1</div>
+                                    </div>
+                                </div>
+
+                                <div class="hop-node" id="hop-4">
+                                    <div class="node-icon">🔗</div>
+                                    <div class="node-label">
+                                        <div class="node-name">Backbone Router</div>
+                                        <div class="node-ip">203.0.113.1</div>
+                                    </div>
+                                </div>
+
+                                <!-- Destination Server -->
+                                <div class="network-node destination-node" id="destination-node">
+                                    <div class="node-icon">🖥️</div>
+                                    <div class="node-label">
+                                        <div class="node-name">Google DNS</div>
+                                        <div class="node-ip">8.8.8.8</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Animated packets will be injected here -->
+                            <div id="packets-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Packet Analysis -->
+            <div class="right-panel">
+                <!-- Packet Flow Steps -->
+                <div class="card packet-flow-panel">
+                    <div class="card__header">
+                        <h3>Packet Flow Analysis</h3>
+                        <div class="flow-controls">
+                            <span class="current-step">Step: <span id="current-step">Ready</span></span>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="flow-steps" id="flow-steps">
+                            <div class="flow-step ready">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <div class="step-title">UDP Probe Packet Sent</div>
+                                    <div class="step-description">Sending UDP packet to port 33434 with TTL=1</div>
+                                </div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <div class="step-title">Router Processes Packet</div>
+                                    <div class="step-description">Router decrements TTL from 1 to 0</div>
+                                </div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <div class="step-title">Packet Discarded</div>
+                                    <div class="step-description">TTL=0, packet is discarded</div>
+                                </div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <div class="step-title">ICMP Time Exceeded</div>
+                                    <div class="step-description">Router generates ICMP Type 11 response</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Packet Inspector -->
+                <div class="card packet-inspector">
+                    <div class="card__header">
+                        <h3>Packet Inspector</h3>
+                        <div class="inspector-tabs">
+                            <button class="tab-btn active" data-tab="structure">Structure</button>
+                            <button class="tab-btn" data-tab="hex">Hex Dump</button>
+                            <button class="tab-btn" data-tab="protocols">Protocols</button>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <!-- Packet Structure Tab -->
+                        <div class="tab-content active" id="structure-tab">
+                            <div class="packet-details" id="packet-details">
+                                <div class="protocol-section">
+                                    <div class="protocol-header">
+                                        <h4>IPv4 Header (20 bytes)</h4>
+                                        <button class="expand-btn" data-target="ipv4-details">▼</button>
+                                    </div>
+                                    <div class="protocol-details" id="ipv4-details">
+                                        <div class="field-row">
+                                            <span class="field-name">Version:</span>
+                                            <span class="field-value" id="ip-version">4</span>
+                                            <span class="field-hex">(0x4)</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Header Length:</span>
+                                            <span class="field-value" id="ip-ihl">5</span>
+                                            <span class="field-hex">(20 bytes)</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Total Length:</span>
+                                            <span class="field-value" id="ip-length">60</span>
+                                            <span class="field-hex">(0x003c)</span>
+                                        </div>
+                                        <div class="field-row highlight-ttl">
+                                            <span class="field-name">TTL:</span>
+                                            <span class="field-value" id="ip-ttl">1</span>
+                                            <span class="field-hex">(0x01) ← Decremented by router</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Protocol:</span>
+                                            <span class="field-value" id="ip-protocol">17</span>
+                                            <span class="field-hex">(UDP)</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Source IP:</span>
+                                            <span class="field-value" id="ip-src">192.168.1.100</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Destination IP:</span>
+                                            <span class="field-value" id="ip-dst">8.8.8.8</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="protocol-section">
+                                    <div class="protocol-header">
+                                        <h4>UDP Header (8 bytes)</h4>
+                                        <button class="expand-btn" data-target="udp-details">▼</button>
+                                    </div>
+                                    <div class="protocol-details" id="udp-details">
+                                        <div class="field-row">
+                                            <span class="field-name">Source Port:</span>
+                                            <span class="field-value" id="udp-src-port">54321</span>
+                                            <span class="field-hex">(0xd431)</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Destination Port:</span>
+                                            <span class="field-value" id="udp-dst-port">33434</span>
+                                            <span class="field-hex">(0x829a) ← Traceroute base port</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Length:</span>
+                                            <span class="field-value" id="udp-length">40</span>
+                                            <span class="field-hex">(0x0028)</span>
+                                        </div>
+                                        <div class="field-row">
+                                            <span class="field-name">Checksum:</span>
+                                            <span class="field-value" id="udp-checksum">0x8f3a</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hex Dump Tab -->
+                        <div class="tab-content" id="hex-tab">
+                            <div class="hex-dump" id="hex-dump">
+                                <div class="hex-header">Packet Hex Dump (60 bytes)</div>
+                                <div class="hex-content">
+                                    <div class="hex-line">
+                                        <span class="hex-offset">0000:</span>
+                                        <span class="hex-bytes ip-header">45 00 00 3c 12 34 40 00 <span class="ttl-highlight">01</span> 11 7a 2b c0 a8 01 64</span>
+                                        <span class="hex-ascii">E..<.4@..{+..d</span>
+                                    </div>
+                                    <div class="hex-line">
+                                        <span class="hex-offset">0010:</span>
+                                        <span class="hex-bytes ip-header">08 08 08 08</span>
+                                        <span class="hex-bytes udp-header">d4 31 82 9a 00 28 8f 3a</span>
+                                        <span class="hex-ascii">....1.(:</span>
+                                    </div>
+                                    <div class="hex-line">
+                                        <span class="hex-offset">0020:</span>
+                                        <span class="hex-bytes udp-data">61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70</span>
+                                        <span class="hex-ascii">abcdefghijklmnop</span>
+                                    </div>
+                                    <div class="hex-line">
+                                        <span class="hex-offset">0030:</span>
+                                        <span class="hex-bytes udp-data">71 72 73 74 75 76 77 61 62 63 64 65 66 67 68 00</span>
+                                        <span class="hex-ascii">qrstuvwabcdefgh.</span>
+                                    </div>
+                                </div>
+                                <div class="hex-legend">
+                                    <div class="legend-item"><span class="color-box ip-header"></span>IP Header</div>
+                                    <div class="legend-item"><span class="color-box udp-header"></span>UDP Header</div>
+                                    <div class="legend-item"><span class="color-box udp-data"></span>UDP Data</div>
+                                    <div class="legend-item"><span class="color-box ttl-highlight"></span>TTL Field</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Protocols Tab -->
+                        <div class="tab-content" id="protocols-tab">
+                            <div class="protocol-info">
+                                <div class="info-section">
+                                    <h4>TTL (Time To Live)</h4>
+                                    <p>8-bit field that prevents routing loops. Each router decrements TTL by 1.</p>
+                                    <ul>
+                                        <li>Linux default: 64</li>
+                                        <li>Windows default: 128</li>
+                                        <li>Cisco default: 255</li>
+                                    </ul>
+                                </div>
+                                <div class="info-section">
+                                    <h4>UDP Traceroute Ports</h4>
+                                    <p>Uses ports 33434-33523 (unlikely to be in use)</p>
+                                    <div class="port-display">Base Port: <span class="mono">33434</span></div>
+                                </div>
+                                <div class="info-section">
+                                    <h4>ICMP Types</h4>
+                                    <div class="icmp-types">
+                                        <div class="icmp-item">
+                                            <span class="icmp-code">Type 11, Code 0:</span>
+                                            <span>TTL exceeded in transit</span>
+                                        </div>
+                                        <div class="icmp-item">
+                                            <span class="icmp-code">Type 3, Code 1:</span>
+                                            <span>Host unreachable</span>
+                                        </div>
+                                        <div class="icmp-item">
+                                            <span class="icmp-code">Type 3, Code 3:</span>
+                                            <span>Port unreachable</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Traceroute Output -->
+                <div class="card output-panel">
+                    <div class="card__header">
+                        <h3>Traceroute Output</h3>
+                        <div class="status-indicator" id="status-indicator">
+                            <span class="status status--info">Ready</span>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="terminal-output" id="terminal-output">
+                            <div class="terminal-line">traceroute to google.com (8.8.8.8), 8 hops max, 60 byte packets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
